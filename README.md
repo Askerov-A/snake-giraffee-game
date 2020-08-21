@@ -1,3 +1,3 @@
-# PixiJS Sound + Webpack Example
+# PixiJS Snake (Giraffee game)
 
-This example is used to show a very basic example of using [PixiJS Sound](https://github.com/pixijs/pixi-sound) and [Webpack](http://webpack.js.org).
+Based on this webpack boilerplate - https://github.com/bigtimebuddy/pixi-sound-webpack-example/tree/typescript 
