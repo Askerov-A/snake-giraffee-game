@@ -1,52 +1,77 @@
-import { Application, Graphics } from 'pixi.js';
-import sound from 'pixi-sound';
+import { Application } from "pixi.js";
+import initControls from "./controls";
+import { DIRECTIONS } from "./constants";
+import { moveSnake, removeAllParts, updateCharacter, createCharacter } from "./character";
+import { createFood, eatFood } from "./food";
 
+// инициализируем приложение
 const app = new Application({
     backgroundColor: 0x999999,
-    width: 400,
-    height: 400,
-    autoStart: false
+    width: 640,
+    height: 640,
+    autoStart: false,
+    antialias: true,
 });
 document.body.appendChild(app.view);
 
-function createButton(visible) {
-    const button = new Graphics()
-        .beginFill(0x0, 0.5)
-        .drawRoundedRect(0, 0, 100, 100, 10)
-        .endFill()
-        .beginFill(0xffffff);
-
-    button.pivot.set(50, 50);
-    button.position.set(app.view.width / 2, app.view.height / 2);
-    button.interactive = true;
-    button.buttonMode = true;
-    button.visible = visible;
-    return button;
+// состояние игры
+export const gameState = {
+    direction: DIRECTIONS.RIGHT,
+    snake: [
+        { x: 0, y: 0, direction: DIRECTIONS.RIGHT },
+        { x: 1, y: 0, direction: DIRECTIONS.RIGHT },
+        { x: 2, y: 0, direction: DIRECTIONS.RIGHT },
+        { x: 3, y: 0, direction: DIRECTIONS.RIGHT },
+    ],
+    foodPos: { x: 3, y: 3 },
+    score: 0,
+    character: null,
+    food: null,
 }
 
-const playButton = createButton(true)
-    .moveTo(36, 30)
-    .lineTo(36, 70)
-    .lineTo(70, 50);
+let start = 0;
 
-const stopButton = createButton(false)
-    .drawRect(34, 34, 32, 32);
+// основной процесс игры
+function gameLoop(timestamp) {
+    start++;
+    
+    if (timestamp - start > 300) {
+        removeAllParts(gameState.character);
 
-app.stage.addChild(playButton, stopButton);
-app.render();
+        // в зависимости от того куда указывает state.direction
+        // змея двигается
+        moveSnake();
 
-app.loader.add('musical', 'musical.mp3').load(function() {
-    playButton.on('click', function() {
-        sound.play('musical', { loop: true });
-        playButton.visible = false;
-        stopButton.visible = true;
-        app.render();
-    });
+        // если в этот момент он наплывает на еду
+        // он её съедает
+        eatFood();
 
-    stopButton.on('click', function() {
-        sound.stop('musical');
-        playButton.visible = true;
-        stopButton.visible = false;
-        app.render();
-    });
-});
+        const character = gameState.character;
+
+        // все функции выше - изменяют main state
+        // тут же мы в зависимости от изменений
+        // перерендериваем нашего жирафа
+        updateCharacter(character, gameState.snake);
+        app.renderer.render(app.stage);
+        start = timestamp;
+    }
+
+    // 60 раз в секунду
+    // рендерится каждый следующий фрейм
+    requestAnimationFrame(gameLoop);
+}
+
+// первоначальная инициализация приложения
+function setup() {
+    gameState.character = createCharacter();
+    gameState.food = createFood();
+    app.stage.addChild(gameState.character);
+    app.stage.addChild(gameState.food);
+    requestAnimationFrame(gameLoop);
+    initControls();
+
+    app.renderer.render(app.stage);
+}
+
+// лоадер текстур
+app.loader.add("head.png").add("body.png").add("react-food.png").load(setup);
